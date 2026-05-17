@@ -14,13 +14,16 @@ const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 // Load env vars
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Connect to database
-connectDB();
-
 const app = express();
 
-// Public Health Check (For Railway) - Moved to top to prevent timeout
-app.get('/health', (req, res) => res.status(200).json({ status: 'OK' }));
+// Public Health Check (For Railway) - Responds immediately without DB dependency
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK',
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV
+  });
+});
 
 const server = http.createServer(app);
 
@@ -42,8 +45,15 @@ app.use(compression());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Enable CORS
-app.use(cors());
+// Enable CORS - Production safe
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')
+    : '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  credentials: true
+};
+app.use(cors(corsOptions));
 
 // Dev logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -71,7 +81,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
 
-  app.get('/{*path}', (req, res) =>
+  app.get('/*', (req, res) =>
     res.sendFile(path.resolve(__dirname, '..', 'client', 'dist', 'index.html'))
   );
 } else {
@@ -97,13 +107,37 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(
-  PORT,
-  () => console.log(`🚀 Production Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
-);
+// Start server with async database connection
+const startServer = async () => {
+  try {
+    // Connect to database
+    await connectDB();
+    console.log('✅ Database connected successfully');
+
+    // Start listening only after DB connection is established
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+      console.log(`📱 Health check endpoint: http://localhost:${PORT}/health`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
-  console.log(`Error: ${err.message}`);
+  console.error('❌ Unhandled Rejection:', err.message);
   server.close(() => process.exit(1));
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('📴 SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
 });
