@@ -1,0 +1,27 @@
+{
+  "name": "taskflow-pro",
+  "version": "1.0.0",
+  "description": "TaskFlow Pro is a production-ready, full-stack SaaS application designed for high-performance teams. Built with a modern tech stack, it features a sleek Kanban board, role-based access control, and real-time analytics.",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "server": "nodemon server/server.js",
+    "client": "npm run dev --prefix client",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "engines": {
+  "node": "20.x"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
