@@ -46,10 +46,13 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Enable CORS - Production safe
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? (process.env.FRONTEND_URL || 'http://localhost:3000')
+      .split(',')
+      .map(url => url.trim().replace(/\/$/, '')) // Remove trailing slashes
+  : '*';
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? (process.env.FRONTEND_URL || 'http://localhost:3000').split(',')
-    : '*',
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 };
@@ -63,8 +66,9 @@ if (process.env.NODE_ENV === 'development') {
 // Socket.io initialization
 const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   }
 });
 app.set('socketio', io);
@@ -81,7 +85,8 @@ app.use('/api/users', require('./routes/userRoutes'));
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
 
-  app.get('/*', (req, res) =>
+  // Express 5 requires named wildcard parameters
+  app.get('/{*splat}', (req, res) =>
     res.sendFile(path.resolve(__dirname, '..', 'client', 'dist', 'index.html'))
   );
 } else {
