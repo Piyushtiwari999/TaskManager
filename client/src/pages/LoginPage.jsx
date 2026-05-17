@@ -77,15 +77,6 @@ const LoginPage = () => {
             </p>
           </div>
         </Card>
-
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-primary-50 dark:bg-primary-500/10 rounded-lg border border-primary-100 dark:border-primary-500/20">
-          <p className="text-xs font-bold text-primary-700 dark:text-primary-400 uppercase tracking-wider mb-2">Demo Credentials</p>
-          <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-            <p>Admin: <span className="font-mono font-medium">admin@taskflow.com</span> / <span className="font-mono">admin123</span></p>
-            <p>Member: <span className="font-mono font-medium">member@taskflow.com</span> / <span className="font-mono">member123</span></p>
-          </div>
-        </div>
       </div>
     </div>
   );
